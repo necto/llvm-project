@@ -9,7 +9,7 @@ on:
   pull_request:
 
 jobs:
-  check_clang:
+  sonarcloud:
     runs-on: 'ubuntu-latest'
     steps:
       - name: Setup Python
@@ -45,7 +45,7 @@ jobs:
           cmake -G Ninja \
                 -B "$builddir" \
                 -S llvm \
-                -DCMAKE_EXPORT_COMPILE_COMMANDS \
+                -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
                 -DLLVM_ENABLE_PROJECTS="clang;lldb;libclc" \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DLLVM_ENABLE_ASSERTIONS=ON \
