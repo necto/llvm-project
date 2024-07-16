@@ -16,6 +16,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install Ninja
+        if: runner.os != 'Linux'
+        uses: llvm/actions/install-ninja@main
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
