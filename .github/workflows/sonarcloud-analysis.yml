@@ -75,7 +75,7 @@ jobs:
       - name: Run sonar-scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           LLVM_BUILDDIR: ${{ steps.config-llvm.outputs.llvm-builddir }}
         run: |
           sonar-scanner --define sonar.cfamily.compile-commands="$LLVM_BUILDDIR/compile_commands.json"
