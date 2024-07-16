@@ -21,6 +21,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+        # necessary for install sonar-scanner
+      - name: Install unzip
+        run: |
+          apt update
+          apt install unzip
       - name: Install sonar-scanner
         uses: SonarSource/sonarcloud-github-c-cpp@v2
       - name: Setup ccache
