@@ -11,13 +11,13 @@ on:
 jobs:
   sonarcloud:
     runs-on: 'ubuntu-latest'
+    container:
+      image: 'ghcr.io/llvm/ci-ubuntu-22.04:latest'
     steps:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Ninja
-        uses: llvm/actions/install-ninja@main
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -37,9 +37,9 @@ jobs:
           max-size: 2G
           key: clang-build-sonar
           variant: sccache
-      - name: Build and Test
+      - name: Config CMake
         shell: bash
-        id: build-llvm
+        id: config-llvm
         run: |
           builddir="$PWD/build"
           mkdir -p $builddir
@@ -56,11 +56,16 @@ jobs:
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER=clang++ \
                 -DCMAKE_C_COMPILER=clang
-          ninja -C "$builddir" check-clang
+      - name: Minimal Build
+        shell: bash
+        env:
+          LLVM_BUILDDIR: ${{ steps.config-llvm.outputs.llvm-builddir }}
+        run: |
+          ninja -v -C "$LLVM_BUILDDIR" libLLVM.so libclang.so
       - name: Run sonar-scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
-          LLVM_BUILDDIR: ${{ steps.build-llvm.outputs.llvm-builddir }}
+          LLVM_BUILDDIR: ${{ steps.config-llvm.outputs.llvm-builddir }}
         run: |
           sonar-scanner --define sonar.cfamily.compile-commands="$LLVM_BUILDDIR/compile_commands.json"
