@@ -1371,6 +1371,28 @@ void MallocChecker::checkIfFreeNameIndex(ProgramStateRef State,
   C.addTransition(State);
 }
 
+bool isIdentifierEqual(clang::IdentifierInfo const* ID, StringRef Name) {
+  return ID && ID->getName() == Name;
+}
+
+bool isNothrowArg(clang::QualType Arg) {
+  // The argument should be convertible to std::nothrow_t const&, so look through the const&.
+  auto const* record = Arg.getNonReferenceType()->getAsCXXRecordDecl();
+  return record != nullptr && record->isInStdNamespace() && isIdentifierEqual(record->getIdentifier(), "nothrow_t");
+}
+
+bool isAPlacementNew(const CallExpr *CE, const FunctionDecl *FD) {
+  if (CE->getNumArgs() == 1)
+    return false;
+  if (2 < CE->getNumArgs()) {
+    // Even if one arg is std::nothrow_t, another one is the placement
+    return true;
+  }
+  // If the second argument is not std::nothrow_t const&, then this is not a
+  // placement new
+  return !isNothrowArg(FD->getParamDecl(1)->getType());
+}
+
 void MallocChecker::checkCXXNewOrCXXDelete(ProgramStateRef State,
                                            const CallEvent &Call,
                                            CheckerContext &C) const {
@@ -1386,6 +1408,10 @@ void MallocChecker::checkCXXNewOrCXXDelete(ProgramStateRef State,
   // processed by the checkPostStmt callbacks for CXXNewExpr and
   // CXXDeleteExpr.
   const FunctionDecl *FD = C.getCalleeDecl(CE);
+  if (isAPlacementNew(CE, FD)) {
+    // Placement new does not allocate memory
+    return;
+  }
   switch (FD->getOverloadedOperator()) {
   case OO_New:
     State = MallocMemAux(C, Call, CE->getArg(0), UndefinedVal(), State,
